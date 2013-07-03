@@ -5,10 +5,9 @@
 4. V subore /app/config/config.neon upravte pristupove udaje do databazy
 
 ***
-
 ##Features
 - nasadeny Twitter Bootstrap
-- Nette upravene, aby nacitavalo templaty z priecinkov podla $_SERVER['HTTP_HOST']. Nastavenia v databaze.
+- Nette nacitava templaty z priecinkov podla $_SERVER['HTTP_HOST']. Nastavenia v databaze.
 - Staticke ACL (access control list) v konfiguracnom subore
 - UserPresenter umoznuje:
  - Registraciu pouzivatelov

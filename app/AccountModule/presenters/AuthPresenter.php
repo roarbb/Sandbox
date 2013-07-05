@@ -1,6 +1,6 @@
 <?php
 
-namespace AdminModule;
+namespace AccountModule;
 
 use Nette\Application\UI\Form;
 use Nette\Security\AuthenticationException;

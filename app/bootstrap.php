@@ -31,8 +31,8 @@ $container = $configurator->createContainer();
 if (function_exists('apache_get_modules') && in_array('mod_rewrite', apache_get_modules())) {
 	$container->router[] = new Route('index.php', 'Front:Default:default', Route::ONE_WAY);
 
-	$container->router[] = $adminRouter = new RouteList('Admin');
-	$adminRouter[] = new Route('admin/<presenter>/<action>', 'Default:default');
+	$container->router[] = $accountRouter = new RouteList('Account');
+	$accountRouter[] = new Route('account/<presenter>/<action>', 'Default:default');
 
 	$container->router[] = $frontRouter = new RouteList('Front');
 	$frontRouter[] = new Route('<presenter>/<action>[/<id>]', 'Default:default');

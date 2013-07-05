@@ -36,9 +36,9 @@ common:
                 - addRole('user', 'guest')
                 - addRole('editor', 'user')
                 - addRole('admin', 'editor')
-                - addResource('Admin:Default')
-                - addResource('Admin:Page')
-                - allow('user', 'Admin:Default') # všetky akcie resource Admin:Default
+                - addResource('Account:Default')
+                - addResource('Account:Page')
+                - allow('user', 'Account:Default') # všetky akcie resource Account:Default
                 - allow('admin') # všetky resources a ich akcie
 
     factories:

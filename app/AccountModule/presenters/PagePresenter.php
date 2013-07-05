@@ -1,6 +1,6 @@
 <?php
 
-namespace AdminModule;
+namespace AccountModule;
 
 class PagePresenter extends BasePresenter
 {

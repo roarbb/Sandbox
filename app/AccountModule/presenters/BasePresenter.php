@@ -1,6 +1,6 @@
 <?php
 
-namespace AdminModule;
+namespace AccountModule;
 
 use Nette\Security\IUserStorage;
 
@@ -10,7 +10,7 @@ abstract class BasePresenter extends \BasePresenter
     {
         parent::startup();
 
-        if ($this->name != 'Admin:Auth') {
+        if ($this->name != 'Account:Auth') {
             if (!$this->user->isLoggedIn()) {
                 if ($this->user->getLogoutReason() === IUserStorage::INACTIVITY ) {
                     $this->flashMessage('Session timeout, you have been logged out');

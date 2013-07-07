@@ -28,6 +28,7 @@ common:
 
         themeRepository: ThemeRepository
         userRepository: UserRepository
+        listingService: Admin_moduleRepository
 
         authorizator:
             class: Nette\Security\Permission
@@ -38,6 +39,8 @@ common:
                 - addRole('admin', 'editor')
                 - addResource('Account:Default')
                 - addResource('Account:Page')
+                - addResource('Admin:Default')
+                - addResource('Admin:Module')
                 - allow('user', 'Account:Default') # všetky akcie resource Account:Default
                 - allow('admin') # všetky resources a ich akcie
 

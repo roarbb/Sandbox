@@ -34,6 +34,15 @@ if (function_exists('apache_get_modules') && in_array('mod_rewrite', apache_get_
 	$container->router[] = $accountRouter = new RouteList('Account');
 	$accountRouter[] = new Route('account/<presenter>/<action>', 'Default:default');
 
+    $container->router[] = $adminRouter = new RouteList('Admin');
+    $adminRouter[] = new Route('ayr/module/edit/<moduleid>[/<id>]', 'Module:edit');
+    $adminRouter[] = new Route('ayr/module/rowedit/<moduleid>[/<id>]', 'Module:rowedit');
+
+    $adminRouter[] = new Route('ayr/module/rowdelete/<moduleid>[/<id>]', 'Module:rowdelete');
+    $adminRouter[] = new Route('ayr/module/delete/<moduleid>[/<id>]', 'Module:delete');
+
+    $adminRouter[] = new Route('ayr/<presenter>/<action>[/<id>]', 'Default:default');
+
 	$container->router[] = $frontRouter = new RouteList('Front');
 	$frontRouter[] = new Route('<presenter>/<action>[/<id>]', 'Default:default');
 

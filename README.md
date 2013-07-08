@@ -1,7 +1,7 @@
 ##Pre spravne fungovanie aplikacie
-1. Vytvorit v roote (/) zlozku "libs" + nastavit prava pre zapisovanie
+1. Vytvorit v roote (/) zlozku "temp" + nastavit prava pre zapisovanie
 2. Vytvorit v roote (/) zlozku "log" + nastavit prava pre zapisovanie
-3. V zlozke /app najdete subor mysql_dump.sql. Spustite ho na svojej databaze.
+3. V zlozke /app najdete subor mysql_dump.sql. Vytvorte databazu "sandbox" a spustite na nej mysql_dump.sql.
 4. V subore /app/config/config.neon upravte pristupove udaje do databazy
 
 ***

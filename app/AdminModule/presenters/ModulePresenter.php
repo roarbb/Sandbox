@@ -158,7 +158,7 @@ final class ModulePresenter extends BasePresenter {
 
     public function renderRowedit($moduleid,$id) {}
 
-    public function renderList($moduleid,$id) {} //danger! grido filters don't work w/out this
+    public function renderList($id) {} //danger! grido filters don't work w/out this
 
     public function renderDelete($moduleid,$id) {
         $this->admin_moduleRepository->deleteModule($id);

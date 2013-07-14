@@ -2,13 +2,10 @@
 
 namespace AdminModule\Forms;
 
-use Nette\Application\UI\Form as AppForm,
-    Nette\Forms\Form,
-    Nette\Utils\Html,
-    Nette\Security\AuthenticationException,
-    Nette\Utils\Strings;
-    // DependentSelectBox\DependentSelectBox;
-
+use DependentSelectBox\DependentSelectBox;
+use Nette\Application\UI\Form as AppForm;
+use Nette\Forms\Form;
+use Nette\Utils\Strings;
 
 class InsertEditModuleForm extends AppForm {
 
@@ -18,7 +15,7 @@ class InsertEditModuleForm extends AppForm {
 
         parent::__construct($parent, $name);
 
-        \DependentSelectBox\DependentSelectBox::register('addDSelect');
+        DependentSelectBox::register('addDSelect');
         $this->presenterObj = $parent;
 
         $params = $this->presenterObj->request->getParameters();

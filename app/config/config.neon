@@ -28,7 +28,9 @@ common:
 
         themeRepository: ThemeRepository
         userRepository: UserRepository
-        listingService: Admin_moduleRepository
+        listingRepository: Admin_moduleRepository
+        listingColumnRepository: Admin_module_columnRepository
+        generalListingRepository: General_moduleRepository
 
         authorizator:
             class: Nette\Security\Permission

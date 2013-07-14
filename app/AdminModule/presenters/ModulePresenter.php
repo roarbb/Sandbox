@@ -11,7 +11,8 @@ use Grido\Components\Columns\Column;
 use Grido\Components\Columns\Date;
 use Grido\Components\Filters\Filter;
 use Grido\Grid;
-use Nette\Database\Connection;
+use Nette\Application\UI\Form;
+use Nette\Database\ Connection;
 
 final class ModulePresenter extends BasePresenter {
 
@@ -25,9 +26,21 @@ final class ModulePresenter extends BasePresenter {
      */
     protected $connection;
 
-    public function inject(\Admin_moduleRepository $admin_moduleRepository, Connection $connection){
-        $this->admin_moduleRepository = $admin_moduleRepository;
+    /**
+     * @var \Admin_module_columnRepository
+     */
+    protected $listingColumnRepository;
+
+    /**
+     * @var \General_moduleRepository
+     */
+    protected $generalRepository;
+
+    public function inject(\Admin_moduleRepository $listingRepository, Connection $connection, \Admin_module_columnRepository $listingColumnRepository, \General_moduleRepository $generalRepository){
         $this->connection = $connection;
+        $this->admin_moduleRepository = $listingRepository;
+        $this->listingColumnRepository = $listingColumnRepository;
+        $this->generalRepository = $generalRepository;
     }
 
 
@@ -49,9 +62,8 @@ final class ModulePresenter extends BasePresenter {
         $module = $this->admin_moduleRepository->getModule($moduleId);
 
         $table = $module->table;
-        $fields = $this->admin_moduleRepository->getFields($table);
+        $fields = $this->generalRepository->getFields($table);
         $showFields = $module->related('admin_module_column')->order('admin_module_column.id')->where('viewable',"1");
-
 
         $grid = new Grid($this, $name);
         $grid->setModel($this->connection->table($table));
@@ -66,22 +78,22 @@ final class ModulePresenter extends BasePresenter {
 
             //najprv skontrolujem obdobu Joinovania
             if($columnRow->replacement_table) {
-                $replacementArray = $this->admin_moduleRepository->getReplacementArray($columnRow);
+                $replacementArray = $this->generalRepository->getReplacementArray($columnRow);
                 $grid->addColumn($columnRow->name, $columnName)->setReplacement($replacementArray);
                 $grid->addFilter($columnRow->name, $columnName, Filter::TYPE_SELECT, $replacementArray);
                 continue;
             }
 
-            if($columnDbInfo['Type'] == 'text') { 
-                $grid->addColumn($columnRow->name, $columnName)->setTruncate(80); 
+            if($columnDbInfo['Type'] == 'text') {
+                $grid->addColumn($columnRow->name, $columnName)->setTruncate(80);
                 $grid->addFilter($columnRow->name, $columnName);
-                continue; 
+                continue;
             }
 
-            if( preg_match('/int\(.*?\)/', $columnDbInfo['Type'])) { 
+            if( preg_match('/int\(.*?\)/', $columnDbInfo['Type'])) {
                 $grid->addColumn($columnRow->name, $columnName)->setSortable();
                 $grid->addFilter($columnRow->name, $columnName, Filter::TYPE_NUMBER);
-                continue; 
+                continue;
             }
 
             if( preg_match('/enum\((.*?)\)/', $columnDbInfo['Type'])) {
@@ -99,10 +111,10 @@ final class ModulePresenter extends BasePresenter {
 
                 $grid->addColumn($columnRow->name, $columnName)->setReplacement($out);
                 $grid->addFilter($columnRow->name, $columnName, Filter::TYPE_SELECT, $out);
-                continue; 
+                continue;
             }
 
-            if( preg_match('/datetime/', $columnDbInfo['Type'])) { 
+            if( preg_match('/datetime/', $columnDbInfo['Type'])) {
                 //pripojim do grida bunku, datetime sa bude chovat ako date
                 $grid->addColumn($columnRow->name, $columnName, Column::TYPE_DATE)->setSortable()->setDateFormat(Date::FORMAT_DATE);
 
@@ -119,14 +131,14 @@ final class ModulePresenter extends BasePresenter {
                         $out[1] = date('Y-m-d',strtotime($value));
 
                         return $out;
-                });
+                    });
 
-                continue; 
+                continue;
             }
 
             $grid->addColumn($columnRow->name, $columnName);
             $grid->addFilter($columnRow->name, $columnName);
-            
+
         }
 
         if ($moduleId == 1) {
@@ -142,7 +154,7 @@ final class ModulePresenter extends BasePresenter {
                 ->setIcon('trash')
                 ->setConfirm('Naozaj chcete vymazať tento záznam?');
         }
-        
+
         $grid->setExporting($table);
     }
 
@@ -173,7 +185,7 @@ final class ModulePresenter extends BasePresenter {
     }
 
     public function renderNew() {
-        $this->template->tables = $this->admin_moduleRepository->getTables();
+        $this->template->tables = $this->generalRepository->getTables();
     }
 
     protected function createComponentDefaultEditForm($name) {
@@ -181,14 +193,191 @@ final class ModulePresenter extends BasePresenter {
     }
 
     public function renderSet($id) {
-        $this->template->fields = $this->admin_moduleRepository->getFields($id);
+        $this->template->fields = $this->generalRepository->getFields($id);
     }
 
-    protected function createComponentInsertEditModuleForm($name) {
-        return new InsertEditModuleForm($this, $name);
+    protected function createComponentInsertEditModuleForm() {
+        DependentSelectBox::register('addDSelect');
+
+        $params = $this->request->getParameters();
+
+        if ($this->action == "edit") {
+            $submitButtonName = "Uložiť";
+            $module = $this->admin_moduleRepository->getModule($params['id']);
+            $moduleColumns = $this->listingColumnRepository->getModuleFields($module->id);
+            $table = $module->table;
+        } else {
+            $table = $params['id'];
+            $submitButtonName = "Vložiť nový modul";
+        }
+
+        $fields = $this->generalRepository->getFields($table);
+        $tables = $this->getAllTablesFromDatabase();
+
+        $form = new Form();
+
+        foreach ($fields as $field) {
+
+            if(!empty($field->Comment)) {
+                $fldName = str_replace('[*]', '', $field->Comment);
+            } else {
+                $fldName = $field->Field;
+            }
+            $form->addGroup($field->Field);
+            $form->addCheckbox('viewable_'.$field->Field, 'Viditeľné');
+            $form->addCheckbox('editable_'.$field->Field, 'Editovateľné');
+            $form->addSelect('table_'.$field->Field, '[ ' . $field->Field . ' ]' . ' je z tabuľky ...', $tables);
+
+            $form->addDSelect('depend_id_'.$field->Field, '... v tejto tabuľke je to ...', $form['table_'.$field->Field], function($this) use($field, $form) {
+                $v = $form['table_'.$field->Field]->getValue();
+                return $this->getFields($v);
+            });
+
+            $form->addDSelect('depend_name_'.$field->Field, '... ale používateľovi to ukazuj ako ...', $form['table_'.$field->Field], function($this) use($field, $form) {
+                $v = $this['table_'.$field->Field]->getValue();
+                return $this->getFields($v);
+            });
+
+            if($this->isAjax()) {
+                $form['depend_id_'.$field->Field]->addOnSubmitCallback(function($this) {
+                    $this->invalidateControl('formSnippet');
+                });
+
+                $this['depend_name_'.$field->Field]->addOnSubmitCallback(function($this) {
+                    $this->invalidateControl('formSnippet');
+                });
+            }
+        }
+
+        $form->setCurrentGroup(NULL);
+        $presenter = $this;
+
+        $form->addSubmit('show', $submitButtonName)
+            ->setAttribute('class', 'btn btn-primary')
+            ->onClick[] = function($button) use($form, $presenter) {
+            $presenter->processInsertEditForm($button->form->values);
+        };
+
+        if ($this->action == "edit") {
+            //ak modul upravujem, nacitam si povodne data
+            foreach ($fields as $field) {
+
+                $form['table_'.$field->Field]->setDefaultValue($moduleColumns[$field->Field]->replacement_table);
+                $form['depend_id_'.$field->Field]->setDefaultValue($moduleColumns[$field->Field]->replacement_id_column);
+                $form['depend_name_'.$field->Field]->setDefaultValue($moduleColumns[$field->Field]->replacement_name_column);
+
+                $form['editable_' . $field->Field]->setDefaultValue(intval($moduleColumns[$field->Field]->editable));
+                $form['viewable_' . $field->Field]->setDefaultValue(intval($moduleColumns[$field->Field]->viewable));
+            }
+
+            // \Nette\Diagnostics\Debugger::dump($moduleColumns['id']->viewable);
+
+            // \Nette\Diagnostics\Debugger::dump('-----------------');
+
+            // foreach ($moduleColumns as $name => $data) {
+            //     \Nette\Diagnostics\Debugger::dump($name . ': ' . $data->viewable);
+            // }
+            // \Nette\Diagnostics\Debugger::dump($module);
+        }
+
+        // \Nette\Diagnostics\Debugger::dump($this);
+        // exit;
+
+        return $form;
     }
 
     protected function createComponentEditModuleRowForm($name) {
         return new EditModuleRowForm($this, $name);
+    }
+
+    private function getAllTablesFromDatabase()
+    {
+        $tables = array('' => 'x x x x x');
+        $dbTables = $this->generalRepository->getTables();
+
+        foreach ($dbTables as $table) {
+            $tables[$table[0]] = $table[0];
+        }
+
+        return $tables;
+    }
+
+    public function getFields($table) {
+        $fields = array();
+        $dbFields = $this->generalRepository->getFields($table);
+
+        foreach ($dbFields as $field) {
+            $fields[$field[0]] = $field[0];
+        }
+
+        return $fields;
+    }
+
+    public function processInsertEditForm($data) {
+
+        $params = $this->request->getParameters();
+
+        if ($this->action == "edit") {
+            $module = $this->admin_moduleRepository->getModule($params['id']);
+            $moduleId = $module->id;
+            $table = $module->table;
+        } else {
+            $table = $params['id'];
+            $moduleId = $this->getModuleIdOrInsert($table);
+        }
+
+        $fields = $this->getFields($table);
+
+        $prefixes = array(
+            'editable' => 'editable_',
+            'viewable' => 'viewable_',
+            'replacement_table' => 'table_',
+            'replacement_id_column' => 'depend_id_',
+            'replacement_name_column' => 'depend_name_',
+        );
+
+        foreach ($fields as $fieldName) {
+            $toDb = array();
+            $toDb['admin_module_id'] = $moduleId;
+            $toDb['name'] = $fieldName;
+            foreach ($prefixes as $dbColumnName => $prefix) {
+                if(is_bool($data[$prefix.$fieldName])) {
+                    if($data[$prefix.$fieldName]) {
+                        $toDb[$dbColumnName] = "1";
+                    } else {
+                        $toDb[$dbColumnName] = "0";
+                    }
+                } else {
+                    if (isset($data[$prefix.$fieldName]) && !empty($data[$prefix.$fieldName])) {
+                        $toDb[$dbColumnName] = $data[$prefix.$fieldName];
+                    }
+                }
+            }
+
+            //edit or update field in module
+            // if ($this->presenterObj->action == "edit") {
+            //     //@TODO: upravit zaznam v DB - dokoncit
+            // } else {
+            $this->listingColumnRepository->insertModuleField($toDb);
+            // }
+        }
+
+        if ($this->action == "edit") {
+            $this->flashMessage('Modul úspešne upravený', 'success');
+        } else {
+            $this->flashMessage('Modul úspešne uložený', 'success');
+        }
+
+        $this->redirect(':admin:module:list', 1);
+    }
+
+    public function getModuleIdOrInsert($tableName) {
+        $moduleId = $this->admin_moduleRepository->getModuleId($tableName);
+
+        if($moduleId) {
+            return (int)$moduleId->id;
+        } else {
+            return (int)$this->admin_moduleRepository->insertNewModule($tableName);
+        }
     }
 }

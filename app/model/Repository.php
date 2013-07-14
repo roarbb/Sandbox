@@ -58,4 +58,14 @@ abstract class Repository extends Nette\Object
 		return $this->getTable()->where($by);
 	}
 
+    /**
+     * Vrati riadok z tabulky podla PRIMARY KEY
+     *
+     * @param $id
+     * @return \Nette\Database\Table\ActiveRow
+     */
+    public function fetchById($id) {
+        return $this->getTable()->get($id);
+    }
+
 }

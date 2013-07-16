@@ -103,7 +103,6 @@ class EditModuleRowForm extends AppForm
 
         $this->presenter->flashMessage('Dáta úspešne zmenené', 'success');
         $this->presenter->redirect(':admin:module:list', $params['moduleid']);
-
     }
 
     private function search($fields, $fieldname) {

@@ -3,16 +3,15 @@
 namespace AdminModule;
 
 use AdminModule\Forms\DefaultEditForm;
-use AdminModule\Forms\EditModuleRowForm;
-use AdminModule\Forms\InsertEditModuleForm;
 use DependentSelectBox\DependentSelectBox;
 use Grido\Components\Actions\Action;
 use Grido\Components\Columns\Column;
 use Grido\Components\Columns\Date;
 use Grido\Components\Filters\Filter;
 use Grido\Grid;
+use Kdyby\BootstrapFormRenderer\BootstrapRenderer;
 use Nette\Application\UI\Form;
-use Nette\Database\ Connection;
+use Nette\Database\Connection;
 
 final class ModulePresenter extends BasePresenter {
 
@@ -196,7 +195,8 @@ final class ModulePresenter extends BasePresenter {
         $this->template->fields = $this->generalRepository->getFields($id);
     }
 
-    protected function createComponentInsertEditModuleForm() {
+    protected function createComponentInsertEditModuleForm($name) {
+
         DependentSelectBox::register('addDSelect');
 
         $params = $this->request->getParameters();
@@ -214,7 +214,7 @@ final class ModulePresenter extends BasePresenter {
         $fields = $this->generalRepository->getFields($table);
         $tables = $this->getAllTablesFromDatabase();
 
-        $form = new Form();
+        $form = new Form($this, $name);
 
         foreach ($fields as $field) {
 
@@ -234,18 +234,14 @@ final class ModulePresenter extends BasePresenter {
             });
 
             $form->addDSelect('depend_name_'.$field->Field, '... ale používateľovi to ukazuj ako ...', $form['table_'.$field->Field], function($this) use($field, $form) {
-                $v = $this['table_'.$field->Field]->getValue();
+                $v = $form['table_'.$field->Field]->getValue();
                 return $this->getFields($v);
             });
 
             if($this->isAjax()) {
-                $form['depend_id_'.$field->Field]->addOnSubmitCallback(function($this) {
-                    $this->invalidateControl('formSnippet');
-                });
+                $form['depend_id_'.$field->Field]->addOnSubmitCallback(array($this, "invalidateControl"), "formSnippet");
 
-                $this['depend_name_'.$field->Field]->addOnSubmitCallback(function($this) {
-                    $this->invalidateControl('formSnippet');
-                });
+                $form['depend_name_'.$field->Field]->addOnSubmitCallback(array($this, "invalidateControl"), "formSnippet");
             }
         }
 
@@ -287,7 +283,78 @@ final class ModulePresenter extends BasePresenter {
     }
 
     protected function createComponentEditModuleRowForm($name) {
-        return new EditModuleRowForm($this, $name);
+
+        $params = $this->request->getParameters();
+
+        $module = $this->admin_moduleRepository->getModule($params['moduleid']);
+        $table = $module->table;
+        $fields = $this->generalRepository->getFields($table);
+        $showFields = $module->related('admin_module_column')->order('admin_module_column.id')->where('editable',"1");
+
+        $form = new Form($this, $name);
+        $form->setRenderer(new BootstrapRenderer());
+
+        foreach ($showFields as $columnRow) {
+            $columnDbInfo = $this->search($fields, $columnRow->name);
+            if($columnDbInfo['Comment'] != "") {
+                $columnName = str_replace('[*]', '', $columnDbInfo['Comment']);
+            } else {
+                $columnName = $columnRow->name;
+            }
+
+            //skontrolujem ci nemam vykreslit select
+            if($columnRow->replacement_table) {
+                $replacementArray = $this->generalRepository->getReplacementArray($columnRow);
+                $form->addSelect($columnRow->name, $columnName, $replacementArray);
+                continue;
+            }
+
+            if($columnDbInfo['Type'] == 'text') {
+                $form->addTextArea($columnRow->name, $columnName);
+                continue;
+            }
+
+            if( preg_match('/int\(.*?\)/', $columnDbInfo['Type'])) {
+                $form->addText($columnRow->name, $columnName);
+                continue;
+            }
+
+            if( preg_match('/enum\((.*?)\)/', $columnDbInfo['Type'])) {
+
+                //ziskam moznosti ktore su uvedene v zatvorke enum('1','0')
+                preg_match('/\((.*?)\)/', $columnDbInfo['Type'], $matches);
+                $options = explode(',', $matches[1]);
+                $out = array(''=>'');
+
+                //spavim si z moznosti pole pre selectbox
+                foreach ($options as $option) {
+                    $option = str_replace("'", '', $option);
+                    $out[$option] = (string)$option;
+                }
+
+                $form->addSelect($columnRow->name, $columnName, $out);
+                continue;
+            }
+
+            if( preg_match('/datetime/', $columnDbInfo['Type'])) {
+                //pripojim do grida bunku, datetime sa bude chovat ako date
+                $form->addText($columnRow->name, $columnName);
+
+                continue;
+            }
+
+            //ak to nie je specialny typ,
+            //spravim len input
+            $form->addText($columnRow->name, $columnName);
+        }
+
+        $form->onSuccess[] = $this->processInsertEditModuleRow;
+
+        $defaults = $this->generalRepository->getModuleEditRow($table, $params['id']);
+
+        $form->setDefaults($defaults);
+
+        $form->addSubmit('submit', 'Uložiť')->setAttribute('class', 'btn btn-primary');
     }
 
     private function getAllTablesFromDatabase()
@@ -371,7 +438,8 @@ final class ModulePresenter extends BasePresenter {
         $this->redirect(':admin:module:list', 1);
     }
 
-    public function getModuleIdOrInsert($tableName) {
+    public function getModuleIdOrInsert($tableName)
+    {
         $moduleId = $this->admin_moduleRepository->getModuleId($tableName);
 
         if($moduleId) {
@@ -379,5 +447,23 @@ final class ModulePresenter extends BasePresenter {
         } else {
             return (int)$this->admin_moduleRepository->insertNewModule($tableName);
         }
+    }
+
+    /**
+     * @param Form $form
+     */
+    public function processInsertEditModuleRow(Form $form)
+    {
+        $values = $form->getValues();
+        $params = $this->request->getParameters();
+        $id = $params['id'];
+
+        $module = $this->admin_moduleRepository->getModule($params['moduleid']);
+        $table = $module->table;
+
+        $this->generalRepository->updateModuleEditRow($table, $id, $values);
+
+        $this->flashMessage('Dáta úspešne zmenené', 'success');
+        $this->redirect(':admin:module:list', $params['moduleid']);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace AdminModule;
 
+use DependentSelectBox\JsonDependentSelectBox;
 use Nette\Security\IUserStorage;
 
 abstract class BasePresenter extends \BasePresenter
@@ -9,6 +10,7 @@ abstract class BasePresenter extends \BasePresenter
     public function startup()
     {
         parent::startup();
+        JsonDependentSelectBox::register('addJSelect');
 
         if ($this->name != 'Admin:Auth') {
             if (!$this->user->isLoggedIn()) {
@@ -27,6 +29,11 @@ abstract class BasePresenter extends \BasePresenter
                 }
             }
         }
+    }
+
+    public function beforeRender() {
+        parent::beforeRender();
+        JsonDependentSelectBox::tryJsonResponse($this /*(presenter)*/);
     }
 
     /**

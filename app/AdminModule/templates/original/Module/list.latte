@@ -28,5 +28,5 @@
 {ifCurrent :admin:module:list 1}
 	<a n:href=":admin:module:new" class="btn btn-success"><i class="icon-plus-sign icon-white"></i> Vložiť nový modul</a>
 {else}
-	<a href="#" class="btn btn-success"><i class="icon-plus-sign icon-white"></i> Vložiť nový záznam</a>
+	<a n:href=":admin:module:newrow $moduleId" class="btn btn-success"><i class="icon-plus-sign icon-white"></i> Vložiť nový záznam</a>
 {/ifCurrent}

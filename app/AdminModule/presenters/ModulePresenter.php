@@ -2,7 +2,6 @@
 
 namespace AdminModule;
 
-use AdminModule\Forms\DefaultEditForm;
 use DependentSelectBox\DependentSelectBox;
 use Grido\Components\Actions\Action;
 use Grido\Components\Columns\Column;
@@ -169,7 +168,14 @@ final class ModulePresenter extends BasePresenter {
 
     public function renderRowedit($moduleid,$id) {}
 
-    public function renderList($id) {} //danger! grido filters don't work w/out this
+    public function renderNewrow($moduleid) {}
+
+    public function renderList($id)
+    {
+        $this->template->moduleId = $id;
+
+        //danger! grido filters don't work w/out this
+    }
 
     public function renderDelete($moduleid,$id) {
         $this->admin_moduleRepository->deleteModule($id);
@@ -178,17 +184,16 @@ final class ModulePresenter extends BasePresenter {
     }
 
     public function renderRowDelete($moduleid,$id) {
-        dump("Mazem riadok cislo " . $id . " z modulu cislo " . $moduleid);
+        $module = $this->admin_moduleRepository->getModule($moduleid);
+        $table = $module->table;
+
+        $this->generalRepository->deleteRowFromModule($id, $table);
         $this->flashMessage('Dáta úspešne zmazané', 'success');
         $this->redirect(':admin:module:list', $moduleid);
     }
 
     public function renderNew() {
         $this->template->tables = $this->generalRepository->getTables();
-    }
-
-    protected function createComponentDefaultEditForm($name) {
-        return new DefaultEditForm($this, $name);
     }
 
     public function renderSet($id) {
@@ -350,9 +355,11 @@ final class ModulePresenter extends BasePresenter {
 
         $form->onSuccess[] = $this->processInsertEditModuleRow;
 
-        $defaults = $this->generalRepository->getModuleEditRow($table, $params['id']);
 
-        $form->setDefaults($defaults);
+        if($this->action == 'rowedit') {
+            $defaults = $this->generalRepository->getModuleEditRow($table, $params['id']);
+            $form->setDefaults($defaults);
+        }
 
         $form->addSubmit('submit', 'Uložiť')->setAttribute('class', 'btn btn-primary');
     }
@@ -456,14 +463,23 @@ final class ModulePresenter extends BasePresenter {
     {
         $values = $form->getValues();
         $params = $this->request->getParameters();
-        $id = $params['id'];
-
         $module = $this->admin_moduleRepository->getModule($params['moduleid']);
         $table = $module->table;
 
-        $this->generalRepository->updateModuleEditRow($table, $id, $values);
+        if($this->action == 'rowedit')
+        {
+            $id = $params['id'];
+            $this->generalRepository->updateModuleEditRow($table, $id, $values);
+            $this->flashMessage('Dáta úspešne zmenené', 'success');
+        }
 
-        $this->flashMessage('Dáta úspešne zmenené', 'success');
+        if($this->action == 'newrow')
+        {
+            $this->generalRepository->createRow($table, $values);
+            $this->flashMessage('Záznam bol úspešne pridaný.', 'success');
+        }
+
+
         $this->redirect(':admin:module:list', $params['moduleid']);
     }
 }

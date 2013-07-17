@@ -33,4 +33,14 @@ class General_moduleRepository extends Repository {
     public function updateModuleEditRow($table, $rowId, $data) {
         return $this->connection->table($table)->get($rowId)->update($data);
     }
+
+    public function createRow($table, $data)
+    {
+        return $this->connection->table($table)->insert($data);
+    }
+
+    public function deleteRowFromModule($id, $table)
+    {
+        $this->connection->table($table)->get($id)->delete();
+    }
 }

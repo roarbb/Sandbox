@@ -31,6 +31,7 @@ common:
         listingRepository: Admin_moduleRepository
         listingColumnRepository: Admin_module_columnRepository
         generalListingRepository: General_moduleRepository
+        googleLinksRepository: Alt_google_linksRepository
 
         authorizator:
             class: Nette\Security\Permission

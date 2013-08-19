@@ -31,6 +31,11 @@ class UserPresenter extends \BasePresenter
         $this->userRepository = $userRepository;
     }
 
+    public function actionDefault()
+    {
+        dump("user :: default");
+    }
+
     public function actionActivate($id)
     {
         if(!$id) {

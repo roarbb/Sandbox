@@ -26,6 +26,11 @@ class General_moduleRepository extends Repository {
         return $this->connection->query('SHOW FULL TABLES')->fetchAll();
     }
 
+    /**
+     * @param $table
+     * @param $rowId
+     * @return \Nette\Database\Table\ActiveRow
+     */
     public function getModuleEditRow($table, $rowId) {
         return $this->connection->table($table)->get($rowId);
     }

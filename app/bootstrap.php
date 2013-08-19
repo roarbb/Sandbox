@@ -44,7 +44,7 @@ if (function_exists('apache_get_modules') && in_array('mod_rewrite', apache_get_
     $adminRouter[] = new Route('ayr/<presenter>/<action>[/<id>]', 'Default:default');
 
     $container->router[] = $frontRouter = new RouteList('Front');
-    $frontRouter[] = new AltamiraPageRouter($container->googleLinksRepository);
+    $frontRouter[] = new AltamiraPageRouter($container->googleLinksRepository); //staticke stranky
     $frontRouter[] = new Route('<presenter>/<action>[/<id>]', 'Default:default');
 
 } else {

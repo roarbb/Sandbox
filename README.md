@@ -13,3 +13,4 @@
  - Registraciu pouzivatelov
  - Aktivovanie pouzivatelskeho konta po overeni emailu
  - Obnovenie zabudnuteho hesla pomocou emailu
+- Doplneny router pre Staticke podstranky (dobrovolne pouzitie)

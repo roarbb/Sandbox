@@ -2,3 +2,10 @@
 /log
 
 /temp
+/libs
+
+/composer.lock
+libs
+
+/app/config/config.production.neon
+/app/config/config.devel.neon

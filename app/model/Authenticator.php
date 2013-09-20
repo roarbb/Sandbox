@@ -1,7 +1,8 @@
 <?php
 
+use Nette\Database\SelectionFactory;
 use Nette\Security,
-	Nette\Utils\Strings;
+    Nette\Utils\Strings;
 
 
 /**
@@ -9,9 +10,6 @@ use Nette\Security,
  */
 class Authenticator extends Nette\Object implements Security\IAuthenticator
 {
-	/** @var Nette\Database\Connection */
-	private $database;
-
     private $salt;
 
     /**
@@ -27,35 +25,30 @@ class Authenticator extends Nette\Object implements Security\IAuthenticator
         return $this->salt;
     }
 
-
-
-	public function __construct(Nette\Database\Connection $database, $salt, UserRepository $userRepository)
-	{
-		$this->database = $database;
+    public function __construct($salt, UserRepository $userRepository)
+    {
         $this->salt = $salt;
         $this->userRepository = $userRepository;
-	}
+    }
 
+    /**
+     * Performs an authentication.
+     * @param  array
+     * @return Nette\Security\Identity
+     * @throws Nette\Security\AuthenticationException
+     */
+    public function authenticate(array $credentials)
+    {
+        list($email, $password) = $credentials;
+        $row = $this->userRepository->findBy(array('email' => $email))->fetch();
 
+        if (!$row) {
+            throw new Security\AuthenticationException('The email is incorrect.', self::IDENTITY_NOT_FOUND);
+        }
 
-	/**
-	 * Performs an authentication.
-	 * @param  array
-	 * @return Nette\Security\Identity
-	 * @throws Nette\Security\AuthenticationException
-	 */
-	public function authenticate(array $credentials)
-	{
-		list($email, $password) = $credentials;
-		$row = $this->database->table('user')->where('email', $email)->fetch();
-
-		if (!$row) {
-			throw new Security\AuthenticationException('The email is incorrect.', self::IDENTITY_NOT_FOUND);
-		}
-
-		if ($row->password !== $this->generateHash($password, $this->salt)) {
-			throw new Security\AuthenticationException('The password is incorrect.', self::INVALID_CREDENTIAL);
-		}
+        if ($row->password !== $this->generateHash($password, $this->salt)) {
+            throw new Security\AuthenticationException('The password is incorrect.', self::INVALID_CREDENTIAL);
+        }
 
         if(!$row->active) {
             throw new Security\AuthenticationException('Your email is not verified.', self::NOT_APPROVED);
@@ -66,23 +59,21 @@ class Authenticator extends Nette\Object implements Security\IAuthenticator
         unset($userData['hash']);
 
         return new Security\Identity($row->id, $row->role, $userData);
-	}
+    }
 
-
-
-	/**
-	 * Computes salted password hash.
-	 * @param  string
-	 * @param  string
-	 * @return string
-	 */
-	public function generateHash($password, $salt = NULL)
-	{
-		if ($password === Strings::upper($password)) { // perhaps caps lock is on
-			$password = Strings::lower($password);
-		}
-		return crypt($password, $salt ?: '$2a$07$' . Strings::random(23));
-	}
+    /**
+     * Computes salted password hash.
+     * @param  string
+     * @param  string
+     * @return string
+     */
+    public function generateHash($password, $salt = NULL)
+    {
+        if ($password === Strings::upper($password)) { // perhaps caps lock is on
+            $password = Strings::lower($password);
+        }
+        return crypt($password, $salt ?: '$2a$07$' . Strings::random(23));
+    }
 
     /**
      * @param  int $id
@@ -91,8 +82,7 @@ class Authenticator extends Nette\Object implements Security\IAuthenticator
     public function setPassword($id, $password)
     {
         $this->userRepository->findBy(array('id' => $id))->update(array(
-            'password' => $this->generateHash($password, $this->salt),
-        ));
+                                                                      'password' => $this->generateHash($password, $this->salt),
+                                                                  ));
     }
-
 }

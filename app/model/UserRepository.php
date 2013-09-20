@@ -2,11 +2,22 @@
 
 use Nette\Latte\Engine;
 use Nette\Mail\Message;
+use Nette\Mail\SmtpException;
+use Nette\Mail\SmtpMailer;
 use Nette\Templating\FileTemplate;
 use Nette\Utils\Strings;
 
 class UserRepository extends Repository
 {
+    /**
+     * @var SmtpMailer
+     */
+    public $mailer;
+
+    public function inject(SmtpMailer $mailer){
+        $this->mailer = $mailer;
+    }
+
     public function getHash() {
         $hash = Strings::random(20);
         $count = $this->findBy(array('hash' => $hash))->count();
@@ -50,10 +61,23 @@ class UserRepository extends Repository
 
     protected function sendMail($email, FileTemplate $template)
     {
-        $mail = new Message;
-        $mail->setFrom('Altamira <neodpovedaj@altamira.sk>')
-            ->addTo($email)
-            ->setHTMLBody($template)
-            ->send();
+        $message = new Message();
+        $message->setFrom('faktury@sajgal.com')
+                ->addTo($email)
+                ->setHTMLBody($template);
+
+        try
+        {
+            $this->mailer->send($message);
+        }
+        catch (SmtpException $e)
+        {
+            echo $e->getMessage();
+        }
+    }
+
+    public function update($userId, $data)
+    {
+        $this->getTable()->where('id', $userId)->update($data);
     }
 }

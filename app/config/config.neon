@@ -24,7 +24,7 @@ common:
             expiration: 30 days
 
     services:
-        authenticator: Authenticator('@nette.database.default', %security.salt%)
+        authenticator: Authenticator(%security.salt%)
 
         themeRepository: ThemeRepository
         userRepository: UserRepository
@@ -49,13 +49,10 @@ common:
 
     factories:
 
-
 production < common:
-    parameters:
-        security:
-            salt: $2a$07$
+    includes:
+        - config.production.neon
 
 development < common:
-    parameters:
-        security:
-            salt: $2a$07$
+    includes:
+        - config.devel.neon

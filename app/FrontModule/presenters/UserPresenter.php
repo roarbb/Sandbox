@@ -4,6 +4,7 @@ namespace FrontModule;
 
 use Exception;
 use Kdyby\BootstrapFormRenderer\BootstrapRenderer;
+use Nette\Application\AbortException;
 use Nette\Application\UI\Form;
 use Nette\Mail\Message;
 use Nette\Utils\Strings;
@@ -29,11 +30,6 @@ class UserPresenter extends \BasePresenter
     {
         $this->authenticator = $authenticator;
         $this->userRepository = $userRepository;
-    }
-
-    public function actionDefault()
-    {
-        dump("user :: default");
     }
 
     public function actionActivate($id)
@@ -66,14 +62,14 @@ class UserPresenter extends \BasePresenter
 
         $form->addText('nickname', 'Vaše meno:')->setRequired('Zadajte prosím Vaše meno.');
         $form->addText('email', 'Email:')
-            ->addRule(Form::EMAIL, 'Prosím zadajte správny formát emailu.')
-            ->setRequired('Zadajte email prosím');
+             ->addRule(Form::EMAIL, 'Prosím zadajte správny formát emailu.')
+             ->setRequired('Zadajte email prosím');
         $form->addPassword('password', 'Heslo:')
-            ->setRequired('Zvoľte si heslo')
-            ->addRule(Form::MIN_LENGTH, 'Heslo musí mať aspoň %d znakov', 8);
+             ->setRequired('Zvoľte si heslo')
+             ->addRule(Form::MIN_LENGTH, 'Heslo musí mať aspoň %d znakov', 8);
         $form->addPassword('password2', 'Heslo pre kontrolu:')
-            ->setRequired('Zadajte prosím heslo ešte raz pre kontrolu')
-            ->addRule(Form::EQUAL, 'Heslá se nezhodujú', $form['password']);
+             ->setRequired('Zadajte prosím heslo ešte raz pre kontrolu')
+             ->addRule(Form::EQUAL, 'Heslá se nezhodujú', $form['password']);
 
         $form->addSubmit('send', 'Registrovať');
 
@@ -84,7 +80,7 @@ class UserPresenter extends \BasePresenter
 
     /**
      * @param Form $form
-     * @return Form
+     * @throws \Nette\Application\AbortException
      */
     public function registerFormSubmitted(Form $form)
     {
@@ -108,6 +104,9 @@ class UserPresenter extends \BasePresenter
             $this->redirect(':front:default:');
         } catch (Exception $e) {
             $form->addError($e->getMessage());
+            if ($e instanceof AbortException) {
+                throw $e;
+            }
         }
     }
 
@@ -120,11 +119,11 @@ class UserPresenter extends \BasePresenter
         $form->setRenderer(new BootstrapRenderer);
 
         $form->addText('email', 'Email:')
-            ->addRule(Form::EMAIL, 'Prosím zadajte správny formát emailu.')
-            ->setRequired('Zadajte email prosím');
+             ->addRule(Form::EMAIL, 'Prosím zadajte správny formát emailu.')
+             ->setRequired('Zadajte email prosím');
 
         $form->addSubmit('send', 'Zaslať nové heslo')
-            ->setAttribute('class', 'btn btn-primary');
+             ->setAttribute('class', 'btn btn-primary');
 
         $form->onSuccess[] = $this->forgetPassFormSubmitted;
         return $form;
@@ -159,14 +158,14 @@ class UserPresenter extends \BasePresenter
         $form->setRenderer(new BootstrapRenderer);
 
         $form->addPassword('password', 'Heslo:')
-            ->setRequired('Zvoľte si heslo')
-            ->addRule(Form::MIN_LENGTH, 'Heslo musí mať aspoň %d znakov', 8);
+             ->setRequired('Zvoľte si heslo')
+             ->addRule(Form::MIN_LENGTH, 'Heslo musí mať aspoň %d znakov', 8);
         $form->addPassword('password2', 'Heslo pre kontrolu:')
-            ->setRequired('Zadajte prosím heslo ešte raz pre kontrolu')
-            ->addRule(Form::EQUAL, 'Heslá se nezhodujú', $form['password']);
+             ->setRequired('Zadajte prosím heslo ešte raz pre kontrolu')
+             ->addRule(Form::EQUAL, 'Heslá se nezhodujú', $form['password']);
 
         $form->addSubmit('send', 'Zmeniť heslo')
-            ->setAttribute('class', 'btn btn-primary');
+             ->setAttribute('class', 'btn btn-primary');
 
         $form->onSuccess[] = $this->repassFormSubmitted;
         return $form;
